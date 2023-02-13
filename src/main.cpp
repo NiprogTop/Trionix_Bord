@@ -140,7 +140,7 @@ void loop() {
   if (parser.received()){
     setMotors();
     int *intData = parser.getData();
-    Serial.print(map(intData[2], -100, 100, 1100, 1900));
+    // Serial.print(map(intData[2], -100, 100, 1100, 1900));
   }
   
   printData();
