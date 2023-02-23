@@ -32,21 +32,34 @@ Servo LEDs;
 SerialParser parser(PARSE_AMOUNT);
 
 int16_t dr1_val, dr2_val, dr3_val, dr4_val;
+int16_t dr1_val_new, dr2_val_new, dr3_val_new, dr4_val_new;
+int intData = 0;
 
 int ledValue = 0;
+
+int timr = 0;
+
+int y_angle = 0;
+
 
 #include "MPU6050.h"
 MPU6050 mpu;
 
 float angle_pitch(){
-  int16_t ay = mpu.getAccelerationY();  // ускорение по оси y
-  // стандартный диапазон: +-2g
-  ay = constrain(ay, -16384, 16384);    // ограничиваем +-1g
-  float angle_y = ay / 16384.0;           // переводим в +-1.0
-  // и в угол через арксинус
-  if (angle_y < 0) angle_y = 90 - degrees(acos(angle_y));
-  else angle_y = degrees(acos(-angle_y)) - 90;
-  return (angle_y);
+  if (timr > 300){
+    timr = 0;
+    int16_t ay = mpu.getAccelerationY();  // ускорение по оси y
+    // стандартный диапазон: +-2g
+    ay = constrain(ay, -16384, 16384);    // ограничиваем +-1g
+    float angle_y = ay / 16384.0;           // переводим в +-1.0
+    // и в угол через арксинус
+    if (angle_y < 0) angle_y = 90 - degrees(acos(angle_y));
+    else angle_y = degrees(acos(-angle_y)) - 90;
+    y_angle = angle_y;
+    return (angle_y);
+  } else{
+    return(y_angle);
+  }
 }
 
 // void updateDepth(){
@@ -62,17 +75,20 @@ void initMotors(){
   dr3.writeMicroseconds(1500);
   dr4.attach(10);
   dr4.writeMicroseconds(1500);
-  delay(7000);
+  // delay(7000);
   pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, 1);
+  delay(7000);
+  digitalWrite(ledPin, 0);
 }
 
 void setMotors()
 {
     int *intData = parser.getData();
-    int16_t dr1_val_new = map(intData[1], -100, 100, 1100, 1900);
-    int16_t dr2_val_new = map(intData[2], -100, 100, 1100, 1900);
-    int16_t dr3_val_new = map(intData[3], -100, 100, 1100, 1900);
-    int16_t dr4_val_new = map(intData[4], -100, 100, 1100, 1900);
+    dr1_val_new = map(intData[1], -100, 100, 1200, 1800);
+    dr2_val_new = map(intData[2], -100, 100, 1200, 1800);
+    dr3_val_new = map(intData[3], -100, 100, 1200, 1800);
+    dr4_val_new = map(intData[4], -100, 100, 1200, 1800);
 
     if (intData[5] != ledValue) {
         ledValue = intData[5];
@@ -87,6 +103,8 @@ void setMotors()
 
         dr4.writeMicroseconds(dr4_val_new);
 }
+
+
 
 void printData()
 {
@@ -117,7 +135,7 @@ void setup() {
 
   initMotors();
 
-  analogWrite(ledPin, 120);
+  // analogWrite(ledPin, 120);
   mpu.initialize();
 
   // while (!sensor.init()) {
@@ -130,35 +148,19 @@ void setup() {
 
   // depth_cal = sensor.depth(); //калибровка глубины в самом начале работы
 
-  analogWrite(ledPin, 0);
-
   Serial.println("ready!");
 
 }
+
 void loop() {
   parser.update();
   if (parser.received()){
     setMotors();
-    int *intData = parser.getData();
-    // Serial.print(map(intData[2], -100, 100, 1100, 1900));
   }
   
   printData();
   delay(5);
+  timr++;
 
 }
 
-// void setup() {
-//   pinMode(2, OUTPUT);
-//   digitalWrite(2, HIGH);
-//   // initialize digital pin LED_BUILTIN as an output.
-//   pinMode(A2, OUTPUT);
-// }
-
-// // the loop function runs over and over again forever
-// void loop() {
-//   digitalWrite(A2, HIGH);   // turn the LED on (HIGH is the voltage level)
-//   delay(1000);                       // wait for a second
-//   digitalWrite(A2, LOW);    // turn the LED off by making the voltage LOW
-//   delay(1000);                       // wait for a second
-// }
